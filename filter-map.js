@@ -37,7 +37,7 @@ const filterMap = {
         group_id2: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"]
 	},
     access: {
-        pro: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"],
+        pro: ["crop_id1"],
         free: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"]
     }        
 };

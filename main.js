@@ -83,27 +83,30 @@ class Filter {
         Object.keys(appliedOptions).forEach(appliedOptionsKey => {
             const appliedOptionsList = appliedOptions[appliedOptionsKey];
 
-            // Обработка примененных фильтров (кроме crops):
             // если в категории примененного фильтра что-то есть
-            if (appliedOptionsList.length && appliedOptionsKey !== 'crops') {
-                // пройти по категории
-                appliedOptionsList.forEach(appliedOptionsListItem => {
-                    // пройти по категории кропы карты фильтров
-                    Object.keys(map.crops).forEach(cropName => {
-                        // если в категории кропы карты фильтров нет примененного фильтра
-                        if (map.crops[cropName][appliedOptionsKey].indexOf(appliedOptionsListItem) === -1) {
-                            // записать в стейт интерфейса для данного кропа - disable: true
-                            const stateCropItem = stateWithCheckedOptions.crops.find(item => {
-                                return item.name === cropName;
-                            });
+            if (appliedOptionsList.length) {
+                // и это категория не crops
+                if (appliedOptionsKey !== 'crops') {
+                    // пройти по категории
+                    appliedOptionsList.forEach(appliedOptionsListItem => {
+                        // пройти по категории кропы карты фильтров
+                        Object.keys(map.crops).forEach(cropName => {
+                            // если в категории кропы карты фильтров нет примененного фильтра
+                            if (map.crops[cropName][appliedOptionsKey].indexOf(appliedOptionsListItem) === -1) {
+                                // записать в стейт интерфейса для данного кропа - disable: true
+                                const stateCropItem = stateWithCheckedOptions.crops.find(item => {
+                                    return item.name === cropName;
+                                });
 
-                            stateCropItem.disable = true;
-                        }
-                    });
-                });                
-            }
-
-            // Обработка примененных фильтров crops:
+                                stateCropItem.disable = true;
+                            }
+                        });
+                    }); 
+                // если категория crops     
+                } else {
+                    // пройти по карте фильтров и найти нужный
+                }           
+            }            
         });
 
         console.log(stateWithCheckedOptions);
