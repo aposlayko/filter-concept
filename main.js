@@ -6,7 +6,7 @@ class Filter {
     constructor(map, appliedOptions) {
         this.map = map;
         this.appliedOptions = appliedOptions;
-        this.buildState(map, appliedOptions)
+        this.buildStateRecursive(map, appliedOptions)
     }
 
     /**
@@ -64,53 +64,162 @@ class Filter {
         // пройти по примененным фильтрам
         Object.keys(appliedOptions).forEach(appliedOptionsKey => {
             const appliedOptionsList = appliedOptions[appliedOptionsKey];
+            
+            // пройти по категории
+            appliedOptionsList.forEach(appliedOptionsListItem => {
+                // и это категория не crops
+                if (appliedOptionsKey !== 'crops') {                    
+                    // пройти по категории кропы карты фильтров
+                    Object.keys(map.crops).forEach(cropName => {
+                        // если в категории кропы карты фильтров нет примененного фильтра
+                        if (map.crops[cropName][appliedOptionsKey].indexOf(appliedOptionsListItem) === -1) {
+                            // записать в стейт интерфейса для данного кропа - disable: true
+                            const stateCropItem = stateWithCheckedOptions.crops.find(item => {
+                                return item.name === cropName;
+                            });
 
-            // если в категории примененного фильтра что-то есть
-            if (appliedOptionsList.length) {
-                // пройти по категории
-                appliedOptionsList.forEach(appliedOptionsListItem => {
-                    // и это категория не crops
-                    if (appliedOptionsKey !== 'crops') {                    
-                        // пройти по категории кропы карты фильтров
-                        Object.keys(map.crops).forEach(cropName => {
-                            // если в категории кропы карты фильтров нет примененного фильтра
-                            if (map.crops[cropName][appliedOptionsKey].indexOf(appliedOptionsListItem) === -1) {
-                                // записать в стейт интерфейса для данного кропа - disable: true
-                                const stateCropItem = stateWithCheckedOptions.crops.find(item => {
-                                    return item.name === cropName;
-                                });
+                            stateCropItem.disable = true;
+                        }
+                    });
+                // если категория crops     
+                } else {
+                // пройти по карте фильтров и найти нужную категорию (кроме кропов)
+                    Object.keys(map).forEach(category => {
+                        if (category !== 'crops') {
+                            // пройти по категории
+                            Object.keys(map[category]).forEach(categoryItem => {
+                                if (map[category][categoryItem].length) {
+                                    // если нет примененного фильтра по кропу
+                                    if (map[category][categoryItem].indexOf(appliedOptionsListItem) === -1) {
+                                        const stateItem = stateWithCheckedOptions[category].find(item => {
+                                            return item.name === categoryItem;
+                                        });
 
-                                stateCropItem.disable = true;
-                            }
-                        });
-                    // если категория crops     
-                    } else {
-                    // пройти по карте фильтров и найти нужную категорию
-                        Object.keys(map).forEach(category => {
-                            if (category !== 'crops') {
-                                // пройти по категории
-                                Object.keys(map[category]).forEach(categoryItem => {
-                                    if (map[category][categoryItem].length) {
-                                        // если нет примененного фильтра по кропу
-                                        if (map[category][categoryItem].indexOf(appliedOptionsListItem) === -1) {
-                                            const stateItem = stateWithCheckedOptions[category].find(item => {
-                                                return item.name === categoryItem;
-                                            });
-
-                                            stateItem.disable = true;
-                                        }
+                                        stateItem.disable = true;
                                     }
-                                });
-                            }
-                        });
-                    } 
-                });          
-            }            
+                                }
+                            });
+                        }
+                    });
+                }
+            });          
+                    
         });
 
         console.log(stateWithCheckedOptions);
         return stateWithCheckedOptions;
-    }    
+    }
+
+    /**
+     * buildState method build interface state with all dependecies and checked options recusive way
+     * @param map filter map with all dependencies
+     * @param applied lists of checked filter options
+     * @returns initial state of filters with checked options in interface like style
+     */
+    buildStateRecursive(map, appliedOptions) {
+        const stateWithoutCheckedFilters = this.buildInitialState(map);
+        const stateWithCheckedOptions = this.markCheckedOptions(stateWithoutCheckedFilters, appliedOptions);
+
+        Object.keys(appliedOptions).forEach(category => {
+            const appliedOptionsCategoryList = appliedOptions[category];
+
+            appliedOptionsCategoryList.forEach(appliedOptionsListItem => {
+                this.applyFilter(appliedOptionsListItem, category, map, stateWithCheckedOptions);
+            });
+        });
+
+        console.log(stateWithCheckedOptions);
+    }
+
+    applyFilter(appliedOptionsListItem, category, map, state) {
+        console.log('applyFilter', appliedOptionsListItem, category);
+        if (category !== 'crops') {
+            // пройти по категории кропы карты фильтров
+            Object.keys(map.crops).forEach(cropName => {
+                // если в категории кропы карты фильтров нет примененного фильтра
+                if (map.crops[cropName][category].indexOf(appliedOptionsListItem) === -1) {
+                    // записать в стейт интерфейса для данного кропа - disable: true
+                    const stateCropItem = state.crops.find(item => {
+                        return item.name === cropName;
+                    });
+
+                    if (!stateCropItem.disable) {
+                        stateCropItem.disable = true;
+                        // this.checkForDisableOtherFilters(stateCropItem.name, 'crops', map, state);
+                    }
+                }
+            });
+        } else {
+            Object.keys(map).forEach(category => {
+                if (category !== 'crops') {
+                    // пройти по категории
+                    Object.keys(map[category]).forEach(categoryItem => {
+                        // если нет примененного фильтра по кропу
+                        if (map[category][categoryItem].indexOf(appliedOptionsListItem) === -1) {
+                            // ищем в стейте интерфейса нужную оцию
+                            const stateItem = state[category].find(item => {
+                                return item.name === categoryItem;
+                            });
+
+                            if (!stateItem.disable) {
+                                stateItem.disable = true;
+                                // this.checkForDisableOtherFilters(stateItem.name, category, map, state);
+                            }
+                        }
+                    });
+                }
+            });
+        } 
+    }
+
+    /**
+     * Recursive method for detect other disabled filters in dependecies
+     * @param {string} disbledFilterName 
+     * @param {string} category 
+     * @param map filter map with all dependencies
+     * @param state lists of checked filter options
+     */
+    checkForDisableOtherFilters(disbledFilterName, category, map, state) {
+        console.log('checkForDisable', disbledFilterName, category);
+
+        if (category !== 'crops') {
+            // пройти по категории кропы карты фильтров
+            Object.keys(map.crops).forEach(cropName => {
+                // если в категории последним остался задизейбленый ранее фильтр
+                if (map.crops[cropName][category].length === 1 && map.crops[cropName][category][0] === disbledFilterName) {
+                    // записать в стейт интерфейса для данного кропа - disable: true
+                    const stateCropItem = state.crops.find(item => {
+                        return item.name === cropName;
+                    });
+
+                    if (!stateCropItem.disable) {
+                        stateCropItem.disable = true;
+                        this.checkForDisableOtherFilters(stateCropItem.name, 'crops', map, state);
+                    }
+                }
+            });
+        } else {
+            Object.keys(map).forEach(category => {
+                if (category !== 'crops') {
+                    // пройти по категории
+                    Object.keys(map[category]).forEach(categoryItem => {
+                        // если в категории последним остался задизейбленый ранее фильтр
+                        if (map[category][categoryItem].length === 1 && map[category][categoryItem][0] === disbledFilterName) {
+                            // ищем в стейте интерфейса нужную оцию
+                            const stateItem = state[category].find(item => {
+                                return item.name === categoryItem;
+                            });
+
+                            if (!stateItem.disable) {
+                                stateItem.disable = true;
+                                this.checkForDisableOtherFilters(stateItem.name, category, map, state);
+                            }
+                        }
+                    });
+                }
+            });
+        } 
+    }
 
     /**
      * markCheckedOptions add to interface state marked options

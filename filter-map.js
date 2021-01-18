@@ -11,14 +11,14 @@ const filterMap = {
             access: ['pro', 'free']
 		},
 		crop_id2: {
-			groups: ["group_id1"],
+			groups: ["group_id1", "group_id2"],
             years: ["2018", "2019", "2020"],
             access: ['pro', 'free']
         },
         crop_id3: {
-            groups: ["group_id1", "group_id2"],
+            groups: ["group_id1"],
             years: ["2018", "2019", "2020"],
-            access: ['pro']
+            access: ['pro', 'free']
         },
         crop_id4: {
             groups: ["group_id1", "group_id2"],
@@ -27,11 +27,11 @@ const filterMap = {
         }
 	},
 	groups: {
-		group_id1: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"],
+		group_id1: ["crop_id1", "crop_id2", "crop_id4"],
         group_id2: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"]
 	},
     access: {
-        pro: ["crop_id1"],
+        pro: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"],
         free: ["crop_id1", "crop_id2", "crop_id3", "crop_id4"]
     }        
 };
