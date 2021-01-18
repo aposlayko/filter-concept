@@ -85,10 +85,10 @@ class Filter {
 
             // если в категории примененного фильтра что-то есть
             if (appliedOptionsList.length) {
-                // и это категория не crops
-                if (appliedOptionsKey !== 'crops') {
-                    // пройти по категории
-                    appliedOptionsList.forEach(appliedOptionsListItem => {
+                // пройти по категории
+                appliedOptionsList.forEach(appliedOptionsListItem => {
+                    // и это категория не crops
+                    if (appliedOptionsKey !== 'crops') {                    
                         // пройти по категории кропы карты фильтров
                         Object.keys(map.crops).forEach(cropName => {
                             // если в категории кропы карты фильтров нет примененного фильтра
@@ -101,11 +101,28 @@ class Filter {
                                 stateCropItem.disable = true;
                             }
                         });
-                    }); 
-                // если категория crops     
-                } else {
-                    // пройти по карте фильтров и найти нужный
-                }           
+                    // если категория crops     
+                    } else {
+                    // пройти по карте фильтров и найти нужную категорию
+                        Object.keys(map).forEach(category => {
+                            if (category !== 'crops') {
+                                // пройти по категории
+                                Object.keys(map[category]).forEach(categoryItem => {
+                                    if (map[category][categoryItem].length) {
+                                        // если нет примененного фильтра по кропу
+                                        if (map[category][categoryItem].indexOf(appliedOptionsListItem) === -1) {
+                                            const stateItem = stateWithCheckedOptions[category].find(item => {
+                                                return item.name === categoryItem;
+                                            });
+
+                                            stateItem.disable = true;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    } 
+                });          
             }            
         });
 
