@@ -29,34 +29,16 @@ class Filter {
                 checked: false
             });
 
-            cropItem.groups.forEach(groupItem => {
-                if (!accum.groups.find(item => item.name === groupItem)) {
-                    accum.groups.push({
-                        name: groupItem,
-                        disable: false,
-                        checked: false
-                    });
-                }                 
-            });
-
-            cropItem.years.forEach(yearItem => {
-                if (!accum.years.find(item => item.name === yearItem)) {
-                    accum.years.push({
-                        name: yearItem, 
-                        disable: false, 
-                        checked: false
-                    });
-                }                 
-            });
-
-            cropItem.access.forEach(accessItem => {
-                if (!accum.access.find(item => item.name === accessItem)) {
-                    accum.access.push({
-                        name: accessItem, 
-                        disable: false, 
-                        checked: false
-                    });
-                }                 
+            Object.keys(map.crops[cropItemKey]).forEach(category => {
+                cropItem[category].forEach(filterItem => {
+                    if (!accum[category].find(item => item.name === filterItem)) {
+                        accum[category].push({
+                            name: filterItem,
+                            disable: false,
+                            checked: false
+                        });
+                    }                 
+                });
             });
 
             return accum;
@@ -76,7 +58,7 @@ class Filter {
     * }
     */
     buildState(map, appliedOptions) {
-        const stateWithoutCheckedFilters = this.buildInitialState(map);        
+        const stateWithoutCheckedFilters = this.buildInitialState(map);
         const stateWithCheckedOptions = this.markCheckedOptions(stateWithoutCheckedFilters, appliedOptions);
 
         // пройти по примененным фильтрам
@@ -127,7 +109,8 @@ class Filter {
         });
 
         console.log(stateWithCheckedOptions);
-    }
+        return stateWithCheckedOptions;
+    }    
 
     /**
      * markCheckedOptions add to interface state marked options
