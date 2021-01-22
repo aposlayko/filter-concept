@@ -7,8 +7,27 @@ class Filter {
      */
     constructor(map, appliedOptions) {
         this.map = map;
-        this.appliedOptions = appliedOptions;
-        this.#buildState(map, appliedOptions);
+        this.appliedOptions = appliedOptions ? appliedOptions : {crops: [], groups: [], years: [], access: []};
+        this.#buildState();
+    }
+
+    /**
+     * buildState method build interface state with all dependecies and checked options recusive way
+     * @param map filter map with all dependencies
+     * @param applied lists of checked filter options
+     * @returns initial state of filters with checked options in interface like style
+     */
+    #buildState() {
+        const stateWithoutCheckedFilters = this.#buildInitialState();
+        this.#state = this.#markCheckedOptions(stateWithoutCheckedFilters, this.appliedOptions);
+
+        Object.keys(this.appliedOptions).forEach(category => {
+            const appliedOptionsCategoryList = this.appliedOptions[category];
+
+            appliedOptionsCategoryList.forEach(appliedOptionsListItem => {
+                this.#applyFilter(appliedOptionsListItem, category);
+            });
+        });
     }
 
     /**
@@ -21,9 +40,9 @@ class Filter {
      *    years: [{ "name":"2020", "disable":false, "checked": false }] 
      * }
      */
-    #buildInitialState(map) {
-        return Object.keys(map.crops).reduce((accum, cropItemKey) => {
-            const cropItem = map.crops[cropItemKey];
+    #buildInitialState() {
+        return Object.keys(this.map.crops).reduce((accum, cropItemKey) => {
+            const cropItem = this.map.crops[cropItemKey];
 
             accum.crops.push({
                 name: cropItemKey,
@@ -31,7 +50,7 @@ class Filter {
                 checked: false
             });
 
-            Object.keys(map.crops[cropItemKey]).forEach(category => {
+            Object.keys(this.map.crops[cropItemKey]).forEach(category => {
                 cropItem[category].forEach(filterItem => {
                     if (!accum[category].find(item => item.name === filterItem)) {
                         accum[category].push({
@@ -45,25 +64,6 @@ class Filter {
 
             return accum;
         }, {crops: [], groups: [], years: [], access: []})
-    }
-
-    /**
-     * buildState method build interface state with all dependecies and checked options recusive way
-     * @param map filter map with all dependencies
-     * @param applied lists of checked filter options
-     * @returns initial state of filters with checked options in interface like style
-     */
-    #buildState(map, appliedOptions) {
-        const stateWithoutCheckedFilters = this.#buildInitialState(map);
-        this.#state = this.#markCheckedOptions(stateWithoutCheckedFilters, appliedOptions);
-
-        Object.keys(appliedOptions).forEach(category => {
-            const appliedOptionsCategoryList = appliedOptions[category];
-
-            appliedOptionsCategoryList.forEach(appliedOptionsListItem => {
-                this.applyFilter(appliedOptionsListItem, category);
-            });
-        });
     }
 
     /**
@@ -84,12 +84,12 @@ class Filter {
         return state;
     }
 
-    applyFilter(appliedOptionsListItem, category) {
+    #applyFilter(filterItem, category) {
         if (category !== 'crops') {
             // пройти по категории кропы карты фильтров
             Object.keys(this.map.crops).forEach(cropName => {
                 // если в категории кропы карты фильтров нет примененного фильтра
-                if (this.map.crops[cropName][category].indexOf(appliedOptionsListItem) === -1) {
+                if (this.map.crops[cropName][category].indexOf(filterItem) === -1) {
                     // записать в стейт интерфейса для данного кропа - disable: true
                     const stateCropItem = this.#state.crops.find(item => {
                         return item.name === cropName;
@@ -106,7 +106,7 @@ class Filter {
                     // пройти по категории
                     Object.keys(this.map[category]).forEach(categoryItem => {
                         // если нет примененного фильтра по кропу
-                        if (this.map[category][categoryItem].indexOf(appliedOptionsListItem) === -1) {
+                        if (this.map[category][categoryItem].indexOf(filterItem) === -1) {
                             // ищем в стейте интерфейса нужную оцию
                             const stateItem = this.#state[category].find(item => {
                                 return item.name === categoryItem;
@@ -125,8 +125,17 @@ class Filter {
     getState() {
         return this.#state;
     }
+
+    clickByFilterItem(filterName, category) {
+        const index = this.appliedOptions[category].indexOf(filterName)
+        const isEnable = index === -1;
+
+        isEnable ? this.appliedOptions[category].push(filterName) : this.appliedOptions[category].splice(index, 1);
+        this.#buildState();
+    }
 }
 
 const filter = new Filter(filterMap, filterApply);
-filter.applyFilter('crop_id3', 'crops');
+filter.clickByFilterItem('crop_id3', 'crops');
+filter.clickByFilterItem('crop_id3', 'crops');
 console.log(filter.getState());
