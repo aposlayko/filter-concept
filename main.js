@@ -1,141 +1,117 @@
-class Filter {
-    #state;
-
-    /**
-     * @param map filter map with all dependencies
-     * @param appliedOptions lists of checked filter options
-     */
-    constructor(map, appliedOptions) {
-        this.map = map;
-        this.appliedOptions = appliedOptions ? appliedOptions : {crops: [], groups: [], years: [], access: []};
-        this.#buildState();
-    }
-
-    /**
-     * buildState method build interface state with all dependecies and checked options recusive way
-     * @param map filter map with all dependencies
-     * @param applied lists of checked filter options
-     * @returns initial state of filters with checked options in interface like style
-     */
-    #buildState() {
-        const stateWithoutCheckedFilters = this.#buildInitialState();
-        this.#state = this.#markCheckedOptions(stateWithoutCheckedFilters, this.appliedOptions);
-
-        Object.keys(this.appliedOptions).forEach(category => {
-            const appliedOptionsCategoryList = this.appliedOptions[category];
-
-            appliedOptionsCategoryList.forEach(appliedOptionsListItem => {
-                this.#applyFilter(appliedOptionsListItem, category);
-            });
-        });
-    }
-
-    /**
-     * @param map filter map with all dependencies
-     * @returns initial state of filters in interface like style
-     * {
-     *    crops: [{ "name":"crop_id1",  "disable":false, "checked": false }],
-     *    groups: [{ "name":"group_id1", "disable":false, "checked": false }],
-     *    access: [{ "name":"pro", "disable":false, "checked": false }],
-     *    years: [{ "name":"2020", "disable":false, "checked": false }] 
-     * }
-     */
-    #buildInitialState() {
-        return Object.keys(this.map.crops).reduce((accum, cropItemKey) => {
-            const cropItem = this.map.crops[cropItemKey];
-
-            accum.crops.push({
-                name: cropItemKey,
-                disable: false,
-                checked: false
-            });
-
-            Object.keys(this.map.crops[cropItemKey]).forEach(category => {
-                cropItem[category].forEach(filterItem => {
-                    if (!accum[category].find(item => item.name === filterItem)) {
-                        accum[category].push({
-                            name: filterItem,
-                            disable: false,
-                            checked: false
-                        });
-                    }                 
-                });
-            });
-
-            return accum;
-        }, {crops: [], groups: [], years: [], access: []})
-    }
-
-    /**
-     * markCheckedOptions add to interface state marked options
-     * @param state interfaces like type
-     */
-    #markCheckedOptions(state, appliedOptions) {
-        Object.keys(state).forEach(stateKey => {
-            const stateList = state[stateKey];
-
-            stateList.forEach(stateItem => {
-                if (appliedOptions[stateKey].indexOf(stateItem.name) != -1) {
-                    stateItem.checked = true;
-                }
-            });
-        });
-
-        return state;
-    }
-
-    #applyFilter(filterItem, category) {
-        if (category !== 'crops') {
-            // пройти по категории кропы карты фильтров
-            Object.keys(this.map.crops).forEach(cropName => {
-                // если в категории кропы карты фильтров нет примененного фильтра
-                if (this.map.crops[cropName][category].indexOf(filterItem) === -1) {
-                    // записать в стейт интерфейса для данного кропа - disable: true
-                    const stateCropItem = this.#state.crops.find(item => {
-                        return item.name === cropName;
-                    });
-
-                    if (!stateCropItem.disable) {
-                        stateCropItem.disable = true;
-                    }
-                }
-            });
-        } else {
-            Object.keys(this.map).forEach(category => {
-                if (category !== 'crops') {
-                    // пройти по категории
-                    Object.keys(this.map[category]).forEach(categoryItem => {
-                        // если нет примененного фильтра по кропу
-                        if (this.map[category][categoryItem].indexOf(filterItem) === -1) {
-                            // ищем в стейте интерфейса нужную оцию
-                            const stateItem = this.#state[category].find(item => {
-                                return item.name === categoryItem;
-                            });
-
-                            if (!stateItem.disable) {
-                                stateItem.disable = true;
-                            }
-                        }
-                    });
-                }
-            });
-        } 
-    }
-
-    getState() {
-        return this.#state;
-    }
-
-    clickByFilterItem(filterName, category) {
-        const index = this.appliedOptions[category].indexOf(filterName)
-        const isEnable = index === -1;
-
-        isEnable ? this.appliedOptions[category].push(filterName) : this.appliedOptions[category].splice(index, 1);
-        this.#buildState();
+function it(message, func) {
+    if (func()) {
+        console.log(`%c ${message} - success`, 'color: green');
+    } else {
+        console.log(`%c ${message} - fail`, 'color: red');
     }
 }
 
-const filter = new Filter(filterMap, filterApply);
-filter.clickByFilterItem('crop_id3', 'crops');
-filter.clickByFilterItem('crop_id3', 'crops');
-console.log(filter.getState());
+
+it('Correct length of state options', () => {
+    const filter = new Filter(filterMap);
+    const state = filter.getState();
+
+    return Object.keys(state).every(category => {
+        if(category === 'access' && state[category].length === 2) {
+            return true;
+        } else if (category === 'crops' && state[category].length === 4) {
+            return true;
+        } else if (category === 'groups' && state[category].length === 2) {
+            return true;
+        } else if (category === 'years' && state[category].length === 3) {
+            return true;
+        } else {
+            return false;
+        }
+    });
+});
+
+it('Correct state without applied filters', () => {
+    const filter = new Filter(filterMap);
+    const state = filter.getState();
+
+    return Object.keys(state).every(category => {
+        return state[category].every(filterItem => {
+            return !filterItem.disable && !filterItem.checked;
+        });
+    });
+});
+
+it('Select filter which doesn\'t affect state', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('2019', 'years');
+    const state = filter.getState();
+
+    const everyOptionEnabled = Object.keys(state).every(category => {
+        return state[category].every(filterItem => {
+            return !filterItem.disable;
+        });
+    });
+    const targetOptionSelected = state.years[1].checked;
+
+    return everyOptionEnabled && targetOptionSelected;
+});
+
+it('Select filter which affect state (disable one crop)', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('2020', 'years');
+    const state = filter.getState();
+
+    const isCropOptionDisable = state.crops[0].disable;
+    const targetOptionSelected = state.years[2].checked;
+
+    return isCropOptionDisable && targetOptionSelected;
+});
+
+it('Select filter which disable two options (pro and 2018)', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('crop_id3', 'crops');
+    const state = filter.getState();
+
+    const isYearOptionDisable = state.years.every(yearItem => yearItem.name === '2018' ? yearItem.disable : !yearItem.disable);
+    const isAccessOptionDisable = state.access.every(accessItem => accessItem.name === 'pro' ? accessItem.disable : !accessItem.disable);
+    const targetOptionSelected = state.crops[2].checked;
+
+    return isYearOptionDisable && isAccessOptionDisable && targetOptionSelected;
+});
+
+it('Select filter which disable 3 options (crops)', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('2018', 'years');
+    const state = filter.getState();
+
+    const isCropsOptionsDisabled = state.crops.every(cropItem => cropItem.name === 'crop_id1' ? !cropItem.disable : cropItem.disable);
+    const targetOptionSelected = state.years[0].checked;
+
+    return isCropsOptionsDisabled && targetOptionSelected;
+});
+
+it('Select 2 filters which disable all options (crops)', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('2018', 'years');
+    filter.clickByFilterItem('2020', 'years');
+    const state = filter.getState();
+
+    const isCropsOptionsDisabled = state.crops.every(cropItem => cropItem.disable);
+    const targetOptionsSelected = state.years[0].checked && state.years[2].checked;
+
+    return isCropsOptionsDisabled && targetOptionsSelected;
+});
+
+it('Select all available options (shouldn\'t disable already selected filter)', () => {
+    const filter = new Filter(filterMap);
+    filter.clickByFilterItem('2020', 'years');
+    filter.clickByFilterItem('2019', 'years');
+    filter.clickByFilterItem('crop_id2', 'crops');
+    filter.clickByFilterItem('crop_id4', 'crops');    
+    filter.clickByFilterItem('crop_id3', 'crops');
+    filter.clickByFilterItem('group_id1', 'groups');
+    filter.clickByFilterItem('free', 'access');    
+    const state = filter.getState();
+
+    return Object.keys(state).every(category => {
+        return state[category].every(filterItem => {
+            return filterItem.disable !== filterItem.checked;
+        });
+    });
+});

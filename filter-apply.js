@@ -1,5 +1,5 @@
 const filterApply = {
-    years: ['2020'],
+    years: [],
     crops: [],
     groups: [],
     access: []
