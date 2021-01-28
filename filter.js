@@ -100,7 +100,7 @@ class Filter {
                     }
                 }
             });
-        } else {
+        } else if (category === 'crops') {
             Object.keys(this.map).forEach(category => {
                 if (category !== 'crops') {
                     // пройти по категории
